@@ -1,27 +1,12 @@
 import React, { useState } from "react";
-import YamlEditor from "./components/YamlEditor";
-import "./App.css";
-import { Box, Container, Stack, useTheme, useMediaQuery } from "@mui/material";
+import { Box, Container, Stack, useTheme, useMediaQuery, Typography, Button } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+import { theme } from './theme/theme';
+import DiagramDisplay from './components/DiagramDisplay';
+import YamlEditor from "./components/YamlEditor";
 
-const DiagramDisplay: React.FC<{ svgContent: string }> = ({ svgContent }) => {
-  return (
-    <div
-      dangerouslySetInnerHTML={{
-        __html: svgContent,
-      }}
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        overflow: "auto",
-      }}
-    />
-  );
-};
+
 
 const App: React.FC = () => {
   const [yamlContent, setYamlContent] = useState("");
@@ -54,54 +39,91 @@ const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Container maxWidth="xl">
-        <Box sx={{ py: 3 }}>
-          <h1>CloudFormation Diagram Generator</h1>
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={3}
-            sx={{
-              minHeight: "calc(100vh - 150px)",
-              mt: 3,
-            }}
-          >
-            {/* Editor Section */}
-            <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Container 
+        maxWidth={false}
+        sx={{ 
+          height: '100vh',
+          width: '100vw',
+          display: 'flex',
+          flexDirection: 'column',
+          p: 3,
+        }}
+      >
+        <Typography 
+          variant="h3" 
+          component="h1" 
+          textAlign="center" 
+          color="primary.main" 
+          mb={3}
+        >
+          CloudFormation Diagram Generator
+        </Typography>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={3}
+          sx={{
+            flex: 1,
+            overflow: 'hidden'
+          }}
+        >
+          <Box sx={{ 
+            flex: 1, 
+            minWidth: 0,
+            display: 'flex',
+            flexDirection: 'column' 
+          }}>
+            <Box sx={{ flex: 1, overflow: 'hidden' }}>
               <YamlEditor
                 value={yamlContent}
                 onChange={setYamlContent}
                 generateDiagram={handleSubmit}
               />
-              <Box sx={{ mt: 2 }}>
-                <button className="submit-button" onClick={handleSubmit}>
-                  Generate Diagram
-                </button>
-              </Box>
             </Box>
-
-            {/* Diagram Display Section */}
-            <Box
+            <Button
+              variant="contained"
+              onClick={handleSubmit}
               sx={{
-                flex: 1,
-                minWidth: 0,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-                padding: "16px",
-                backgroundColor: "#fff",
-                overflow: "hidden",
+                mt: 2,
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                },
               }}
             >
-              {svgContent ? (
-                <DiagramDisplay svgContent={svgContent} />
-              ) : (
-                <div className="placeholder">Your diagram will appear here</div>
-              )}
-            </Box>
-          </Stack>
-        </Box>
+              Generate Diagram
+            </Button>
+          </Box>
+
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              border: "1px solid",
+              borderColor: 'divider',
+              borderRadius: 1,
+              p: 2,
+              bgcolor: 'background.paper',
+              overflow: "auto",
+            }}
+          >
+            {svgContent ? (
+              <DiagramDisplay svgContent={svgContent} />
+            ) : (
+              <Typography
+                color="text.secondary"
+                fontSize="1.2rem"
+                textAlign="center"
+                p={2}
+              >
+                Your diagram will appear here
+              </Typography>
+            )}
+          </Box>
+        </Stack>
       </Container>
     </ThemeProvider>
   );

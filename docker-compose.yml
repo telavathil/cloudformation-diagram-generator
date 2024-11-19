@@ -1,4 +1,4 @@
-version: "3.8"
+# version: "3.8"
 
 services:
   api:
@@ -30,4 +30,4 @@ services:
       - NODE_ENV=development
     depends_on:
       - api
-    command: npm run dev
+    command: npm run dev -- --host 0.0.0.0

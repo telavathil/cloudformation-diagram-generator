@@ -5,18 +5,20 @@ This module provides a REST API service for generating diagrams.
 """
 import os
 import tempfile
+import re
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import yaml
-from diagrams import Diagram
-from diagrams.aws.compute import EC2, Lambda
+from diagrams import Diagram, Edge
+from diagrams.aws.compute import EC2, Lambda, ECS
 from diagrams.aws.database import RDS, Dynamodb
-from diagrams.aws.network import VPC, ELB
+from diagrams.aws.network import VPC, ELB, Route53
 from diagrams.aws.storage import S3
-from diagrams.aws.security import IAM
+from diagrams.aws.security import IAM, SecurityHub
 from diagrams.aws.integration import SQS, SNS
 from diagrams.aws.management import Cloudwatch
+from yaml.constructor import Constructor
 
 # Load environment variables before creating Flask app
 load_dotenv()
@@ -36,13 +38,53 @@ RESOURCE_MAP = {
     'AWS::IAM::Role': IAM,
     'AWS::SQS::Queue': SQS,
     'AWS::SNS::Topic': SNS,
-    'AWS::CloudWatch::Alarm': Cloudwatch
+    'AWS::CloudWatch::Alarm': Cloudwatch,
+    'AWS::ECS::Service': ECS,
+    'AWS::ECS::TaskDefinition': ECS,
+    'AWS::ElasticLoadBalancingV2::LoadBalancer': ELB,
+    'AWS::ElasticLoadBalancingV2::TargetGroup': ELB,
+    'AWS::ElasticLoadBalancingV2::Listener': ELB,
+    'AWS::Route53::RecordSet': Route53,
+    'AWS::EC2::SecurityGroup': SecurityHub,
 }
+
+# Resource type groupings for better layout
+RESOURCE_GROUPS = {
+    'network': ['AWS::EC2::VPC', 'AWS::EC2::SecurityGroup', 'AWS::ElasticLoadBalancingV2::LoadBalancer', 
+                'AWS::Route53::RecordSet'],
+    'compute': ['AWS::ECS::Service', 'AWS::ECS::TaskDefinition', 'AWS::EC2::Instance', 'AWS::Lambda::Function'],
+    'security': ['AWS::IAM::Role'],
+    'database': ['AWS::RDS::DBInstance', 'AWS::DynamoDB::Table'],
+    'storage': ['AWS::S3::Bucket'],
+    'integration': ['AWS::SQS::Queue', 'AWS::SNS::Topic'],
+    'monitoring': ['AWS::CloudWatch::Alarm']
+}
+
+# Add custom YAML constructors for CloudFormation intrinsic functions
+def construct_cfn_tag(loader, tag_suffix, node):
+    """Generic constructor for CloudFormation tags"""
+    if isinstance(node, yaml.ScalarNode):
+        return {tag_suffix: loader.construct_scalar(node)}
+    elif isinstance(node, yaml.SequenceNode):
+        return {tag_suffix: loader.construct_sequence(node)}
+    elif isinstance(node, yaml.MappingNode):
+        return {tag_suffix: loader.construct_mapping(node)}
+
+# Create custom YAML loader for CloudFormation
+class CloudFormationLoader(yaml.SafeLoader):
+    pass
+
+# Register CloudFormation intrinsic functions
+cfn_tags = ['Ref', 'Sub', 'Join', 'Select', 'Split', 'GetAtt', 'GetAZs', 'ImportValue', 'FindInMap']
+for tag in cfn_tags:
+    CloudFormationLoader.add_constructor(f'!{tag}', 
+        lambda loader, node, tag=tag: construct_cfn_tag(loader, tag, node))
 
 def parse_cloudformation(yaml_content):
     """Parse CloudFormation YAML and extract resources with their relationships."""
     try:
-        cf_template = yaml.safe_load(yaml_content)
+        # Use CloudFormationLoader instead of safe_load
+        cf_template = yaml.load(yaml_content, Loader=CloudFormationLoader)
         resources = cf_template.get('Resources', {})
 
         nodes = {}
@@ -87,43 +129,69 @@ def generate_diagram():
                 'AWS Architecture',
                 show=False,
                 filename=diagram_path,
-                direction='LR',
+                direction='TB',
                 curvestyle='ortho',
                 graph_attr={
                     'splines': 'ortho',
                     'fontname': 'Liberation Sans',
                     'bgcolor': 'transparent',
-                    'pad': '0.5',
-                    'nodesep': '1',
-                    'ranksep': '1'
+                    'pad': '3.0',
+                    'nodesep': '2.0',
+                    'ranksep': '2.0',
+                    'overlap': 'false',
+                    'sep': '+35',
                 },
                 node_attr={
                     'fontname': 'Liberation Sans',
-                    'fontsize': '12',
-                    'imagescale': 'true',
+                    'fontsize': '14',
+                    'imagescale': 'false',
                     'fixedsize': 'true',
-                    'width': '1.5',
-                    'height': '1.5',
-                    'shape': 'none'
+                    'width': '0.8',
+                    'height': '0.8',
+                    'shape': 'none',
+                    'margin': '0.8',
+                    'labelloc': 'b',
+                    'labeljust': 'c',
+                },
+                edge_attr={
+                    'fontsize': '12',
+                    'fontname': 'Liberation Sans',
+                    'penwidth': '1.0',
+                    'minlen': '3'
                 },
                 outformat='svg'
             ) as diagram:
                 created_nodes = {}
+                
+                # Create nodes with logical names
                 for resource_id, resource_info in nodes.items():
-                    node_class = RESOURCE_MAP[resource_info['type']]
-                    created_nodes[resource_id] = node_class(resource_id)
+                    if resource_info['type'] in RESOURCE_MAP:
+                        node_class = RESOURCE_MAP[resource_info['type']]
+                        # Simplified label processing with longer length
+                        label = resource_id
+                        for prefix in ['Service', 'AWS', 'Task', 'Security']:
+                            label = label.replace(prefix, '')
+                        label = label[:20] + '...' if len(label) > 20 else label
+                        created_nodes[resource_id] = node_class(label)
 
+                # Create relationships with custom styling
                 for source, target in relationships:
                     if source in created_nodes and target in created_nodes:
-                        created_nodes[source] >> created_nodes[target]
+                        edge_style = {
+                            'color': '#707070',
+                            'style': 'dashed',
+                            'penwidth': '0.5',
+                            'constraint': 'true',
+                            'weight': '1'
+                        }
+                        created_nodes[source] >> Edge(**edge_style) >> created_nodes[target]
 
+            # Read and process SVG content
             svg_path = f"{diagram_path}.svg"
-
             with open(svg_path, 'r', encoding='utf-8') as svg_file:
                 svg_content = svg_file.read()
 
                 # Replace icon paths with absolute URLs
-                import re
                 svg_content = re.sub(
                     r'xlink:href="(/usr/local/lib/python3.12/site-packages/resources/aws/[^"]+)"',
                     lambda m: f'xlink:href="http://localhost:5001/icons/aws/{os.path.basename(m.group(1))}"',
