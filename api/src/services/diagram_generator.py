@@ -6,6 +6,11 @@ from ..config.settings import RESOURCE_MAP, DIAGRAM_SETTINGS
 
 def generate_diagram(nodes, relationships):
     """Generate architecture diagram from parsed CloudFormation resources."""
+    # TODO: Add logging
+    print("Generating diagram...")
+    print("Nodes:", nodes)
+    print("Relationships:", relationships)
+
     with tempfile.TemporaryDirectory() as tmpdir:
         diagram_path = os.path.join(tmpdir, "architecture")
 
@@ -56,4 +61,4 @@ def process_svg_content(svg_path):
             r'xlink:href="(/usr/local/lib/python3.12/site-packages/resources/aws/[^"]+)"',
             lambda m: f'xlink:href="http://localhost:5001/icons/aws/{os.path.basename(m.group(1))}"',
             svg_content
-        ) 
+        )
