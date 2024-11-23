@@ -1,5 +1,5 @@
-import { Box } from "@mui/material";
-import Editor from "@monaco-editor/react";
+import { Box } from '@mui/material';
+import Editor from '@monaco-editor/react';
 
 interface YamlEditorProps {
   value: string;
@@ -21,7 +21,7 @@ const YamlEditor: React.FC<YamlEditorProps> = ({ value, onChange, generateDiagra
         height="100%"
         defaultLanguage="yaml"
         value={value}
-        onChange={(value) => onChange(value || "")}
+        onChange={(value) => onChange(value || '')}
         theme="vs-dark"
         options={{
           minimap: { enabled: false },

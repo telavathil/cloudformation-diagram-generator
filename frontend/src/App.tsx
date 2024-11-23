@@ -1,38 +1,38 @@
-import React, { useState } from "react";
-import { Box, Container, Stack, useTheme, useMediaQuery, Typography, Button } from "@mui/material";
-import { ThemeProvider } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
+import React, { useState } from 'react';
+import { Box, Container, Stack, useTheme, useMediaQuery, Typography, Button } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { theme } from './theme/theme';
 import DiagramDisplay from './components/DiagramDisplay';
-import YamlEditor from "./components/YamlEditor";
+import YamlEditor from './components/YamlEditor';
 
 
 
 const App: React.FC = () => {
-  const [yamlContent, setYamlContent] = useState("");
+  const [yamlContent, setYamlContent] = useState('');
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleSubmit = async () => {
     try {
-      const response = await fetch("http://localhost:5001/generate-diagram", {
-        method: "POST",
+      const response = await fetch('http://localhost:5001/generate-diagram', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ yaml: yamlContent }),
       });
 
-      if (response.headers.get("content-type")?.includes("image/svg+xml")) {
+      if (response.headers.get('content-type')?.includes('image/svg+xml')) {
         const svgText = await response.text();
         setSvgContent(svgText);
       } else {
         const data = await response.json();
-        console.error("Error:", data.error);
+        console.error('Error:', data.error);
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error('Error:', error);
     }
   };
 
@@ -59,7 +59,7 @@ const App: React.FC = () => {
           CloudFormation Diagram Generator
         </Typography>
         <Stack
-          direction={{ xs: "column", md: "row" }}
+          direction={{ xs: 'column', md: 'row' }}
           spacing={3}
           sx={{
             flex: 1,
@@ -99,15 +99,15 @@ const App: React.FC = () => {
             sx={{
               flex: 1,
               minWidth: 0,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              border: "1px solid",
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              border: '1px solid',
               borderColor: 'divider',
               borderRadius: 1,
               p: 2,
               bgcolor: 'background.paper',
-              overflow: "auto",
+              overflow: 'auto',
             }}
           >
             {svgContent ? (

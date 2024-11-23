@@ -23,20 +23,20 @@ const DiagramDisplay: React.FC<DiagramDisplayProps> = ({ svgContent }) => {
           objectFit: 'contain',
         },
         '& image': {
-          width: '96px !important',
-          height: '96px !important',
+          width: '128px !important',
+          height: '128px !important',
         },
         '& text': {
           fontSize: '14px !important',
           fontFamily: '"Monaco", "Menlo", monospace !important',
           textAnchor: 'middle !important',
-          dominantBaseline: 'text-after-edge !important',
-          dy: '1.5em !important',
+          dominantBaseline: 'central !important',
+          dy: '3em !important',
         },
         '& .edge text': {
           fontSize: '12px !important',
           dominantBaseline: 'middle !important',
-        }
+        },
       }}
       dangerouslySetInnerHTML={{
         __html: svgContent,
